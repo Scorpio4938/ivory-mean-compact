@@ -36,19 +36,13 @@ while {alive _car} do
         _dummy = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
         _dummy attachTo [_car, [0,0,0]];
 
-        // Inner loop — overlap start of next sound by 0.03s to mask transition gap
+        // Inner loop — start next say3D 0.3s before current ends to guarantee overlap
         [_car, _siren, _sirenTime, _type, _dummy] spawn {
             params ["_car", "_siren", "_sirenTime", "_type", "_dummy"];
-            private _first = true;
             while {_car getVariable "ani_siren" == _type && !isNull driver _car} do {
+                private _timeStarted = time;
                 _dummy say3D [_siren, 300];
-
-                if (_first) then {
-                    sleep (_sirenTime - 0.03);
-                    _first = false;
-                } else {
-                    sleep (_sirenTime - 0.03);
-                };
+                waitUntil { time >= _timeStarted + _sirenTime - 0.3 || _car getVariable "ani_siren" != _type || isNull driver _car };
             };
         };
 
