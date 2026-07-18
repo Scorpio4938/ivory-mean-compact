@@ -34,6 +34,10 @@ class CfgFunctions
 
 class CfgVehicles
 {
+    // Forward-declare external classes from MeansCars addon
+    class M_CVPIbase;
+    class M_CVPI;
+
     // -- CVPI base: add emergencySiren property --
     class M_CVPIbase: M_CVPIbase
     {
