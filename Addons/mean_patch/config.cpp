@@ -32,12 +32,3 @@ class CfgFunctions
         };
     };
 };
-
-// CBA Extended Init — REPLACES vanilla Mean init (no nested class = suppress)
-class Extended_Init_EventHandlers
-{
-    class M_CVPI
-    {
-        init = "this spawn mean_patch_fnc_initCar";
-    };
-};

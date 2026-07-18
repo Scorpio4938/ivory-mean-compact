@@ -156,3 +156,11 @@
         [_vcl] call mean_patch_fnc_manual;
     };
 }, {}, [DIK_BACKSLASH, [false, false, false]]] call CBA_fnc_addKeybind;
+
+// ──────────────────────────────────────
+// Init override — runs alongside vanilla Mean init
+// ──────────────────────────────────────
+["M_CVPI", "init", {
+    params ["_car"];
+    _car spawn mean_patch_fnc_initCar;
+}, true, [], true] call CBA_fnc_addClassEventHandler;
