@@ -43,11 +43,9 @@
         _vcl setVariable ["ani_lightbar", (_vcl getVariable ["ani_lightbar_todo", 1]), true];
         _vcl setVariable ["ani_siren",    (_vcl getVariable ["ani_siren_todo",    1]), true];
         _vcl animate ["ani_lightbar", 0.1];
-        _vcl animate ["ani_sirens",   0.2];
     } else {
         // Turn off: siren only, lightbar stays
         _vcl setVariable ["ani_siren", 0, true];
-        _vcl animate ["ani_sirens", 0];
     };
 }, {}, [DIK_R, [false, false, false]]] call CBA_fnc_addKeybind;
 
@@ -132,7 +130,6 @@
         _vcl setVariable ["ani_lightbar", 0, true];
         _vcl setVariable ["ani_siren", 0, true];
         _vcl animate ["ani_lightbar", 0];
-        _vcl animate ["ani_sirens", 0];
     };
 }, {}, [DIK_T, [false, false, false]]] call CBA_fnc_addKeybind;
 
