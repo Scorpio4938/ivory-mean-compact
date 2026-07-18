@@ -47,7 +47,7 @@
         // Turn off: siren only, lightbar stays
         _vcl setVariable ["ani_siren", 0, true];
     };
-}, {}, [DIK_R, [false, false, false]]] call CBA_fnc_addKeybind;
+}, {}, [DIK_R, [true, false, false]]] call CBA_fnc_addKeybind;
 
 // ──────────────────────────────────────
 // Next siren tone — Shift+R
@@ -74,7 +74,7 @@
         _vcl setVariable ["ani_siren_todo", 1];
         if (_vcl getVariable "ani_siren" > 0) then { _vcl setVariable ["ani_siren", 1, true]; };
     };
-}, {}, [DIK_R, [false, true, false]]] call CBA_fnc_addKeybind;
+}, {}, [DIK_R, [true, false, false]]] call CBA_fnc_addKeybind;
 
 // ──────────────────────────────────────
 // Direct siren phases — 1 / 2 / 3 / 4
@@ -139,12 +139,10 @@
 ["Mean Patch", "mean_takedown", ["Emergency - Takedown", ""], {
     MEAN_DRIVER_GATE
     _vcl setVariable ["ani_takedown", 1, true];
-    _vcl animate ["ani_takedown", 1];
 }, {
     private _vcl = vehicle player;
     if (!isNull _vcl) then {
         _vcl setVariable ["ani_takedown", 0, true];
-        _vcl animate ["ani_takedown", 0];
     };
 }, [DIK_C, [false, false, false]], true] call CBA_fnc_addKeybind;
 

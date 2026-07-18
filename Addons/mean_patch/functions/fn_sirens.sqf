@@ -45,7 +45,7 @@ while {alive _car} do
                 private _timeStarted = time;
                 _dummy say3D [_siren, 300];
 
-                waitUntil { time >= _timeStarted + _sirenTime || _car getVariable "ani_siren" != _type || isNull driver _car };
+                waitUntil { time >= _timeStarted + _sirenTime - 0.05 || _car getVariable "ani_siren" != _type || isNull driver _car };
             };
         };
 
