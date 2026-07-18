@@ -20,12 +20,12 @@ class CfgFunctions
             class Init
             {
                 postInit = 1;
-                file = "mean_patch\scripts\init.sqf";
+                file = "scripts\init.sqf";
             };
         };
         class vehicle
         {
-            file = "mean_patch\functions";
+            file = "functions";
             class initCar {};
             class manual {};
         };
