@@ -42,3 +42,11 @@ _car setVariable ["ani_lightbar_todo",  1, true];
 // ── Spawn Ivory siren and horn audio loops ──
 _car spawn ivory_fnc_horn;
 _car spawn mean_patch_fnc_sirens;
+
+// ── Add Read Manual scroll-wheel action (runtime, no config needed) ──
+_car addAction [
+    "<t color='#4EB1BA'>Read Manual</t>",
+    { [_this select 0] call mean_patch_fnc_manual; },
+    nil, 1.5, false, true, "",
+    "driver _target == player"
+];
