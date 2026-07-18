@@ -47,7 +47,7 @@ class CfgVehicles
         {
             init = "this spawn mean_patch_fnc_initCar";
         };
-        class UserActions: UserActions
+        class UserActions
         {
             class Read_Manual
             {
