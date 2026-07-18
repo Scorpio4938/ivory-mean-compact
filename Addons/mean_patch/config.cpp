@@ -32,16 +32,3 @@ class CfgFunctions
         };
     };
 };
-
-// CBA Extended Init Event Handler — properly suppresses the vanilla config init
-class Extended_Init_EventHandlers
-{
-    class M_CVPI
-    {
-        class mean_patch_suppress
-        {
-            init = "this spawn mean_patch_fnc_initCar";
-            override = 1;
-        };
-    };
-};
