@@ -28,16 +28,7 @@ class CfgFunctions
             file = "\SCORPIO4938_\ivory-mean-compact\Addons\mean_patch\functions";
             class initCar {};
             class manual {};
+            class sirens {};
         };
-    };
-};
-
-class CfgVehicles
-{
-    // -- CVPI: add emergencySiren so Ivory's fn_sirens knows the siren set --
-    // Properties merge additively — no class inheritance corruption here
-    class M_CVPI
-    {
-        emergencySiren = 1;
     };
 };

@@ -41,4 +41,4 @@ _car setVariable ["ani_lightbar_todo",  1, true];
 
 // ── Spawn Ivory siren and horn audio loops ──
 _car spawn ivory_fnc_horn;
-_car spawn ivory_fnc_sirens;
+_car spawn mean_patch_fnc_sirens;
