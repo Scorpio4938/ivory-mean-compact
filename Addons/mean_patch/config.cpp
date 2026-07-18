@@ -34,26 +34,10 @@ class CfgFunctions
 
 class CfgVehicles
 {
-    // -- CVPI: emergencySiren, replace init, add Read Manual --
+    // -- CVPI: add emergencySiren so Ivory's fn_sirens knows the siren set --
+    // Properties merge additively — no class inheritance corruption here
     class M_CVPI
     {
         emergencySiren = 1;
-        class EventHandlers
-        {
-            init = "this spawn mean_patch_fnc_initCar";
-        };
-        class UserActions
-        {
-            class Read_Manual
-            {
-                displayName = "<t color='#4EB1BA'>Read Manual</t>";
-                position = "drivewheel";
-                radius = 10;
-                condition = "driver this == player";
-                statement = "[this] call mean_patch_fnc_manual;";
-                showWindow = 0;
-                onlyForPlayer = 1;
-            };
-        };
     };
 };
