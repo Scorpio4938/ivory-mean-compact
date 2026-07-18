@@ -5,6 +5,8 @@
 
 if (!hasInterface) exitWith {};
 params ["_car"];
+if (_car getVariable ["mean_sirens_running", false]) exitWith {};
+_car setVariable ["mean_sirens_running", true, true];
 
 private _siren1     = "ivory_ss2000_wail";
 private _siren1Time = 20.742;
@@ -38,8 +40,7 @@ while {alive _car} do
             while {_car getVariable "ani_siren" == _type && !isNull driver _car} do {
                 private _timeStarted = time;
                 _car say3D [_siren, 300];
-                // Start next say3D 0.3s before current one finishes — they mix (not cancel)
-                waitUntil { time >= _timeStarted + _sirenTime - 0.3 || _car getVariable "ani_siren" != _type || isNull driver _car };
+                waitUntil { time >= _timeStarted + _sirenTime - 0.05 || _car getVariable "ani_siren" != _type || isNull driver _car };
             };
         };
 
