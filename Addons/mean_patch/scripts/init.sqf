@@ -134,6 +134,21 @@
 }, {}, [DIK_T, [false, false, false]]] call CBA_fnc_addKeybind;
 
 // ──────────────────────────────────────
+// Takedown lights — hold C  (sets both Ivory var and Mean animation)
+// ──────────────────────────────────────
+["Mean Patch", "mean_takedown", ["Emergency - Takedown", ""], {
+    MEAN_DRIVER_GATE
+    _vcl setVariable ["ani_takedown", 1, true];
+    _vcl animate ["ani_takedown", 1];
+}, {
+    private _vcl = vehicle player;
+    if (!isNull _vcl) then {
+        _vcl setVariable ["ani_takedown", 0, true];
+        _vcl animate ["ani_takedown", 0];
+    };
+}, [DIK_C, [false, false, false]], true] call CBA_fnc_addKeybind;
+
+// ──────────────────────────────────────
 // Read Manual — Backslash
 // ──────────────────────────────────────
 ["Mean Patch", "mean_manual", ["Read Manual", ""], {
