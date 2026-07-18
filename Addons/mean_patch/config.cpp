@@ -34,15 +34,10 @@ class CfgFunctions
 
 class CfgVehicles
 {
-    // -- CVPI base: add emergencySiren property (merged into existing class) --
-    class M_CVPIbase
-    {
-        emergencySiren = 1;
-    };
-
-    // -- CVPI: replace init event handler + add Read Manual --
+    // -- CVPI: emergencySiren, replace init, add Read Manual --
     class M_CVPI
     {
+        emergencySiren = 1;
         class EventHandlers
         {
             init = "this spawn mean_patch_fnc_initCar";
