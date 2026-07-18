@@ -1,6 +1,7 @@
 // mean_patch_fnc_sirens
-// Based on ivory_fnc_sirens — uses say3D with a tiny overlap (-0.03s)
-// to mask the sub-frame gap between loop iterations.
+// Plays sirens through the vehicle itself (not a dummy) so concurrent
+// say3D calls mix rather than cancel. 0.3s overlap for seamless looping.
+// Direct vehicle say3D also improves in-car volume.
 
 if (!hasInterface) exitWith {};
 params ["_car"];
@@ -13,8 +14,6 @@ private _siren3     = "ivory_ss2000_priority";
 private _siren3Time = 9.862;
 private _siren4     = "ivory_ss2000_hilo";
 private _siren4Time = 10.211;
-
-private _dummy = objNull;
 
 while {alive _car} do
 {
@@ -33,23 +32,18 @@ while {alive _car} do
             if (_ani_siren == 4) exitWith { _type = 4; _siren = _siren4; _sirenTime = _siren4Time; };
         };
 
-        _dummy = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
-        _dummy attachTo [_car, [0,0,0]];
-
-        // Inner loop — start next say3D 0.3s before current ends to guarantee overlap
-        [_car, _siren, _sirenTime, _type, _dummy] spawn {
-            params ["_car", "_siren", "_sirenTime", "_type", "_dummy"];
+        // Spawned loop — plays through the car directly (supports concurrent say3D)
+        [_car, _siren, _sirenTime, _type] spawn {
+            params ["_car", "_siren", "_sirenTime", "_type"];
             while {_car getVariable "ani_siren" == _type && !isNull driver _car} do {
                 private _timeStarted = time;
-                _dummy say3D [_siren, 300];
+                _car say3D [_siren, 300];
+                // Start next say3D 0.3s before current one finishes — they mix (not cancel)
                 waitUntil { time >= _timeStarted + _sirenTime - 0.3 || _car getVariable "ani_siren" != _type || isNull driver _car };
             };
         };
 
         waitUntil { _car getVariable "ani_siren" != _type || isNull driver _car };
-
-        detach _dummy;
-        deleteVehicle _dummy;
 
     } else {
         waitUntil {sleep 0.01; !alive _car || (!isNull driver _car && (_car getVariable ["ani_siren", 1] > 0) && damage _car < 0.7 && (_car getVariable ["ani_lightbar", 1] > 0) && player distance _car <= 850)};
