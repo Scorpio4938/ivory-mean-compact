@@ -20,12 +20,12 @@ class CfgFunctions
             class Init
             {
                 postInit = 1;
-                file = "scripts\init.sqf";
+                file = "\SCORPIO4938_\ivory-mean-compact\Addons\mean_patch\scripts\init.sqf";
             };
         };
         class vehicle
         {
-            file = "functions";
+            file = "\SCORPIO4938_\ivory-mean-compact\Addons\mean_patch\functions";
             class initCar {};
             class manual {};
         };
