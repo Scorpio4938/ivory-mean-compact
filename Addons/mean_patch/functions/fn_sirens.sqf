@@ -32,9 +32,9 @@ while {alive _car} do
         };
 
         private _dummyA = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
-        _dummyA attachTo [_car, [0, 0, 1.5]];
+        _dummyA attachTo [_car, [0, 0, 0]];
         private _dummyB = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
-        _dummyB attachTo [_car, [0, 0, 1.5]];
+        _dummyB attachTo [_car, [0, 0, 0]];
 
         private _toggle  = false;
         private _alive   = true;
