@@ -12,11 +12,17 @@ class CfgPatches
 // Override Mean vehicle attenuation so siren audio is audible inside the cabin
 class CfgVehicles
 {
+    class M_CVPIbase;
     class M_CVPIbase: M_CVPIbase { attenuationEffectType = "DefaultAttenuation"; };
+    class M_Charger12base;
     class M_Charger12base: M_Charger12base { attenuationEffectType = "DefaultAttenuation"; };
+    class M_Tahoebase;
     class M_Tahoebase: M_Tahoebase { attenuationEffectType = "DefaultAttenuation"; };
+    class M_Ambulancebase;
     class M_Ambulancebase: M_Ambulancebase { attenuationEffectType = "DefaultAttenuation"; };
+    class M_FPISbase;
     class M_FPISbase: M_FPISbase { attenuationEffectType = "DefaultAttenuation"; };
+    class M_Silveradobase;
     class M_Silveradobase: M_Silveradobase { attenuationEffectType = "DefaultAttenuation"; };
 };
 
