@@ -176,6 +176,26 @@ The siren script is generic — it takes a `_car` parameter and works on any veh
 4. Test interior: siren audible inside the cabin (driver + passengers)
 5. Test mode switching: instant silence on switch, no accumulation
 
+### Step 5: Staggered spawn (loading screen hang fix)
+
+If all Mean vehicles are on the map at once (e.g. a test mission with all 37 variants), spawning 3 concurrent audio loops per vehicle (37×3=111 threads) during loading can choke the SQF scheduler and hang on the loading screen. The fix: stagger the spawn inside `fn_initCar.sqf` so vehicles start up 50ms apart instead of all at once.
+
+```sqf
+if (isNil "mean_patch_stagger") then { mean_patch_stagger = 0; };
+private _offset = mean_patch_stagger;
+mean_patch_stagger = mean_patch_stagger + 0.05;
+
+[_car, _offset] spawn {
+    params ["_car", "_offset"];
+    sleep _offset;
+    _car spawn mean_patch_fnc_horn;
+    _car spawn mean_patch_fnc_sirens;
+    _car spawn mean_patch_fnc_takedown;
+};
+```
+
+This has no effect during normal gameplay (vehicles spawn at different times naturally). Only relevant when 15+ Mean vehicles are created in the same frame (e.g. during mission load).
+
 ---
 
 ## Troubleshooting
