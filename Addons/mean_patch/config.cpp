@@ -29,6 +29,7 @@ class CfgFunctions
             class initCar {};
             class manual {};
             class sirens {};
+            class takedown {};
         };
     };
 };

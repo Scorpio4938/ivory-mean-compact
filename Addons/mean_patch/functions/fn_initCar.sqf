@@ -17,9 +17,10 @@ _car setVariable ["ani_siren_todo",     1, true];
 _car setVariable ["ani_lightbar",       0, true];
 _car setVariable ["ani_lightbar_todo",  1, true];
 
-// ── Spawn Ivory siren and horn audio loops ──
+// ── Spawn Ivory siren, horn, and takedown audio loops ──
 _car spawn ivory_fnc_horn;
 _car spawn mean_patch_fnc_sirens;
+_car spawn mean_patch_fnc_takedown;
 
 // ── Add Read Manual scroll-wheel action (runtime, no config needed) ──
 _car addAction [
