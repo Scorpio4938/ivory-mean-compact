@@ -17,10 +17,18 @@ _car setVariable ["ani_siren_todo",     1, true];
 _car setVariable ["ani_lightbar",       0, true];
 _car setVariable ["ani_lightbar_todo",  1, true];
 
-// ── Spawn Mean-sourced siren, horn, and takedown audio loops ──
-_car spawn mean_patch_fnc_horn;
-_car spawn mean_patch_fnc_sirens;
-_car spawn mean_patch_fnc_takedown;
+// ── Staggered spawn — prevents scheduler choke when 37 vehicles load at once ──
+if (isNil "mean_patch_stagger") then { mean_patch_stagger = 0; };
+private _offset = mean_patch_stagger;
+mean_patch_stagger = mean_patch_stagger + 0.05;
+
+[_car, _offset] spawn {
+    params ["_car", "_offset"];
+    sleep _offset;
+    _car spawn mean_patch_fnc_horn;
+    _car spawn mean_patch_fnc_sirens;
+    _car spawn mean_patch_fnc_takedown;
+};
 
 // ── Add Read Manual scroll-wheel action (runtime, no config needed) ──
 _car addAction [
