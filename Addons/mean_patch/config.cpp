@@ -12,41 +12,45 @@ class CfgPatches
 // Add Ivory's occlusion values to Mean vehicles.
 //
 // ROOT CAUSE of interior silence: Ivory vehicles set occludeSoundsWhenIn=2.5
-// and obstructSoundsWhenIn=1, allowing external sounds (#particlesource siren)
-// to pass through into the cabin. Mean vehicles omit these properties, so the
-// engine uses high defaults that block external sounds inside.
+// and obstructSoundsWhenIn=1 (low values, external sounds pass into cabin).
+// Mean vehicles OMITS these → engine uses high defaults → #particlesource
+// siren blocked inside. attenuationEffectType is the SAME on both (not the cause).
 //
-// FIX: bare-class merge adds these properties to the existing Mean base classes.
-// "Police" in requiredAddons ensures our addon loads AFTER Mean, so the merge
-// preserves the original CRFT_Car_Base parent inheritance.
+// FIX: redefine each base class with its SAME parent (CRFT_Car_Base).
+// Specifying the matching parent is what triggers a config MERGE (preserving
+// all of Mean's original properties) instead of a REPLACE (which corrupts
+// the class and loses scope/side/etc).
+//
+// CRFT_Car_Base is forward-declared because it is defined inside Mean's config.
 class CfgVehicles
 {
-    class M_CVPIbase
+    class CRFT_Car_Base;
+    class M_CVPIbase: CRFT_Car_Base
     {
         occludeSoundsWhenIn = 2.5;
         obstructSoundsWhenIn = 1;
     };
-    class M_Charger12base
+    class M_Charger12base: CRFT_Car_Base
     {
         occludeSoundsWhenIn = 2.5;
         obstructSoundsWhenIn = 1;
     };
-    class M_Tahoebase
+    class M_Tahoebase: CRFT_Car_Base
     {
         occludeSoundsWhenIn = 2.5;
         obstructSoundsWhenIn = 1;
     };
-    class M_Ambulancebase
+    class M_Ambulancebase: CRFT_Car_Base
     {
         occludeSoundsWhenIn = 2.5;
         obstructSoundsWhenIn = 1;
     };
-    class M_FPISbase
+    class M_FPISbase: CRFT_Car_Base
     {
         occludeSoundsWhenIn = 2.5;
         obstructSoundsWhenIn = 1;
     };
-    class M_Silveradobase
+    class M_Silveradobase: CRFT_Car_Base
     {
         occludeSoundsWhenIn = 2.5;
         obstructSoundsWhenIn = 1;
