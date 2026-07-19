@@ -3,21 +3,10 @@ class CfgPatches
     class mean_patch
     {
         requiredVersion = 0.1;
-        requiredAddons[] = {"Police", "Ivory_Data", "cba_main"};
+        requiredAddons[] = {"Meanscars", "Ivory_Data", "cba_main"};
         units[] = {};
         weapons[] = {};
     };
-};
-
-// Override Mean vehicle attenuation so siren audio is audible inside the cabin
-class CfgVehicles
-{
-    class M_CVPIbase: M_CVPIbase { attenuationEffectType = "DefaultAttenuation"; };
-    class M_Charger12base: M_Charger12base { attenuationEffectType = "DefaultAttenuation"; };
-    class M_Tahoebase: M_Tahoebase { attenuationEffectType = "DefaultAttenuation"; };
-    class M_Ambulancebase: M_Ambulancebase { attenuationEffectType = "DefaultAttenuation"; };
-    class M_FPISbase: M_FPISbase { attenuationEffectType = "DefaultAttenuation"; };
-    class M_Silveradobase: M_Silveradobase { attenuationEffectType = "DefaultAttenuation"; };
 };
 
 class CfgFunctions

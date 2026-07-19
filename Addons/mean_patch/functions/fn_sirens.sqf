@@ -44,6 +44,8 @@ while {alive _car} do
 
             private _dummy = if (_toggle) then { _dummyA } else { _dummyB };
             _dummy say3D [_siren, 300];
+            // Interior: play on each occupant so sound originates inside the cabin
+            { _x say3D [_siren, 50] } forEach crew _car;
             _toggle = !_toggle;
 
             // Wait full cycle minus offset, checking mode every 0.05s
