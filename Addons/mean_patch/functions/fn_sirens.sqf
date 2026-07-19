@@ -1,12 +1,11 @@
 // mean_patch_fnc_sirens
-// Plays sirens through the vehicle itself (not a dummy) so concurrent
-// say3D calls mix rather than cancel. 0.3s overlap for seamless looping.
-// Direct vehicle say3D also improves in-car volume.
+// Dual-dummy particlesource with responsive mode check.
+// Two dummies alternate for seamless same-tone looping.
+// Mode switch: deleteVehicle kills old sound instantly — no accumulation.
+// Checks for mode change every 0.05s while waiting — responsive.
 
 if (!hasInterface) exitWith {};
 params ["_car"];
-if (_car getVariable ["mean_sirens_running", false]) exitWith {};
-_car setVariable ["mean_sirens_running", true, true];
 
 private _siren1     = "ivory_ss2000_wail";
 private _siren1Time = 20.742;
@@ -23,28 +22,52 @@ while {alive _car} do
 
         private _ani_siren = _car getVariable "ani_siren";
 
-        private _type      = 0;
         private _siren     = "";
-        private _sirenTime = 0;
-
+        private _halfCycle = 0;
         call {
-            if (_ani_siren == 1) exitWith { _type = 1; _siren = _siren1; _sirenTime = _siren1Time; };
-            if (_ani_siren == 2) exitWith { _type = 2; _siren = _siren2; _sirenTime = _siren2Time; };
-            if (_ani_siren == 3) exitWith { _type = 3; _siren = _siren3; _sirenTime = _siren3Time; };
-            if (_ani_siren == 4) exitWith { _type = 4; _siren = _siren4; _sirenTime = _siren4Time; };
+            if (_ani_siren == 1) exitWith { _siren = _siren1; _halfCycle = _siren1Time * 0.5; };
+            if (_ani_siren == 2) exitWith { _siren = _siren2; _halfCycle = _siren2Time * 0.5; };
+            if (_ani_siren == 3) exitWith { _siren = _siren3; _halfCycle = _siren3Time * 0.5; };
+            if (_ani_siren == 4) exitWith { _siren = _siren4; _halfCycle = _siren4Time * 0.5; };
         };
 
-        // Spawned loop — plays through the car directly (supports concurrent say3D)
-        [_car, _siren, _sirenTime, _type] spawn {
-            params ["_car", "_siren", "_sirenTime", "_type"];
-            while {_car getVariable "ani_siren" == _type && !isNull driver _car} do {
-                private _timeStarted = time;
-                _car say3D [_siren, 300];
-                waitUntil { time >= _timeStarted + _sirenTime - 0.05 || _car getVariable "ani_siren" != _type || isNull driver _car };
+        private _dummyA = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
+        _dummyA attachTo [_car, [0,0,0]];
+        private _dummyB = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
+        _dummyB attachTo [_car, [0,0,0]];
+
+        private _toggle  = false;
+        private _alive   = true;
+
+        // Inline alternating loop — no nested spawn, responsive mode check
+        while {_alive && alive _car && _car getVariable "ani_siren" == _ani_siren && !isNull driver _car && damage _car < 0.7 && _car getVariable "ani_lightbar" > 0 && player distance _car <= 850} do {
+
+            private _dummy = if (_toggle) then { _dummyA } else { _dummyB };
+            _dummy say3D [_siren, 300];
+            _toggle = !_toggle;
+
+            // Wait half-cycle minus offset, checking mode every 0.05s
+            private _wakeAt = time + _halfCycle - 0.08;
+            waitUntil {
+                sleep 0.05;
+                time >= _wakeAt ||
+                _car getVariable "ani_siren" != _ani_siren ||
+                !alive _car ||
+                isNull driver _car ||
+                damage _car >= 0.7 ||
+                _car getVariable "ani_lightbar" == 0 ||
+                player distance _car > 850
+            };
+
+            // If mode changed or conditions broken, flag exit
+            if (_car getVariable "ani_siren" != _ani_siren || !alive _car || isNull driver _car || damage _car >= 0.7 || _car getVariable "ani_lightbar" == 0 || player distance _car > 850) then {
+                _alive = false;
             };
         };
 
-        waitUntil { _car getVariable "ani_siren" != _type || isNull driver _car };
+        // Cleanup — deleteVehicle kills all active say3D instantly
+        deleteVehicle _dummyA;
+        deleteVehicle _dummyB;
 
     } else {
         waitUntil {sleep 0.01; !alive _car || (!isNull driver _car && (_car getVariable ["ani_siren", 1] > 0) && damage _car < 0.7 && (_car getVariable ["ani_lightbar", 1] > 0) && player distance _car <= 850)};
