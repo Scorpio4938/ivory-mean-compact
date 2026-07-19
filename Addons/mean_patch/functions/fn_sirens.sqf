@@ -23,12 +23,13 @@ while {alive _car} do
         private _ani_siren = _car getVariable "ani_siren";
 
         private _siren     = "";
+        private _sirenTime = 0;
         private _cycleTime = 0;
         call {
-            if (_ani_siren == 1) exitWith { _siren = _siren1; _cycleTime = _siren1Time - 0.35; };
-            if (_ani_siren == 2) exitWith { _siren = _siren2; _cycleTime = _siren2Time - 0.15; };
-            if (_ani_siren == 3) exitWith { _siren = _siren3; _cycleTime = _siren3Time - 0.15; };
-            if (_ani_siren == 4) exitWith { _siren = _siren4; _cycleTime = _siren4Time - 0.25; };
+            if (_ani_siren == 1) exitWith { _siren = _siren1; _sirenTime = _siren1Time; _cycleTime = _siren1Time - 0.35; };
+            if (_ani_siren == 2) exitWith { _siren = _siren2; _sirenTime = _siren2Time; _cycleTime = _siren2Time - 0.15; };
+            if (_ani_siren == 3) exitWith { _siren = _siren3; _sirenTime = _siren3Time; _cycleTime = _siren3Time - 0.15; };
+            if (_ani_siren == 4) exitWith { _siren = _siren4; _sirenTime = _siren4Time; _cycleTime = _siren4Time - 0.25; };
         };
 
         private _dummyA = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
@@ -38,14 +39,20 @@ while {alive _car} do
 
         private _toggle  = false;
         private _alive   = true;
+        private _nextCarSay = time;  // track _car say3D timing — exact duration, no overlap
 
         // Inline alternating loop — no nested spawn, responsive mode check
         while {_alive && alive _car && _car getVariable "ani_siren" == _ani_siren && !isNull driver _car && damage _car < 0.7 && _car getVariable "ani_lightbar" > 0 && player distance _car <= 850} do {
 
             private _dummy = if (_toggle) then { _dummyA } else { _dummyB };
             _dummy say3D [_siren, 300];
-            _car say3D [_siren, 300];  // interior — bypasses CarAttenuation
             _toggle = !_toggle;
+
+            // Interior — fire at exact siren duration so old finishes before new starts
+            if (time >= _nextCarSay) then {
+                _car say3D [_siren, 300];
+                _nextCarSay = time + _sirenTime;
+            };
 
             // Wait full cycle minus offset, checking mode every 0.05s
             private _wakeAt = time + _cycleTime;
