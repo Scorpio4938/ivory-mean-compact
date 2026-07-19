@@ -44,6 +44,8 @@ while {alive _car} do
 
             private _dummy = if (_toggle) then { _dummyA } else { _dummyB };
             _dummy say3D [_siren, 300];
+            // Interior — 2D playSound bypasses CarAttenuation, replaces previous call (no accumulation)
+            if (driver _car == player) then { playSound [_siren, 1.0]; };
             _toggle = !_toggle;
 
             // Wait full cycle minus offset, checking mode every 0.05s
