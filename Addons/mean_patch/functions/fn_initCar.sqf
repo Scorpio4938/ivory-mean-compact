@@ -17,8 +17,8 @@ _car setVariable ["ani_siren_todo",     1, true];
 _car setVariable ["ani_lightbar",       0, true];
 _car setVariable ["ani_lightbar_todo",  1, true];
 
-// ── Spawn Ivory siren, horn, and takedown audio loops ──
-_car spawn ivory_fnc_horn;
+// ── Spawn Mean-sourced siren, horn, and takedown audio loops ──
+_car spawn mean_patch_fnc_horn;
 _car spawn mean_patch_fnc_sirens;
 _car spawn mean_patch_fnc_takedown;
 

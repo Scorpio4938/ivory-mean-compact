@@ -30,6 +30,7 @@ class CfgFunctions
             class manual {};
             class sirens {};
             class takedown {};
+            class horn {};
         };
     };
 };
