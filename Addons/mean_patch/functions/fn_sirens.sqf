@@ -26,8 +26,8 @@ while {alive _car} do
         private _cycleTime = 0;
         call {
             if (_ani_siren == 1) exitWith { _siren = _siren1; _cycleTime = _siren1Time - 0.20; };
-            if (_ani_siren == 2) exitWith { _siren = _siren2; _cycleTime = _siren2Time - 0.20; };
-            if (_ani_siren == 3) exitWith { _siren = _siren3; _cycleTime = _siren3Time - 0.20; };
+            if (_ani_siren == 2) exitWith { _siren = _siren2; _cycleTime = _siren2Time - 0.15; };
+            if (_ani_siren == 3) exitWith { _siren = _siren3; _cycleTime = _siren3Time - 0.15; };
             if (_ani_siren == 4) exitWith { _siren = _siren4; _cycleTime = _siren4Time - 0.20; };
         };
 
