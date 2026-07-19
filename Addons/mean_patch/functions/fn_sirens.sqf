@@ -44,7 +44,7 @@ while {alive _car} do
 
             private _dummy = if (_toggle) then { _dummyA } else { _dummyB };
             _dummy say3D [_siren, 300];
-            _car say3D [_siren, 300];  // interior mix — audible inside the vehicle
+            _car say [_siren, 300];  // interior mix — vehicle-wide audio, not positional
             _toggle = !_toggle;
 
             // Wait full cycle minus offset, checking mode every 0.05s
