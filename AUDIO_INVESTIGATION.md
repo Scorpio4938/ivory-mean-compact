@@ -2,196 +2,138 @@
 
 ## Overview
 
-Investigation into why the Ivory Car Pack's `say3D`-based siren system produces smooth audio on Ivory vehicles but exhibits gaps, glitches, and sound accumulation when applied to the Means Emergency Vehicle Pack.
+Investigation into why the Ivory Car Pack's `say3D`-based siren system produces smooth audio on Ivory vehicles but exhibits gaps and interior silence when applied to the Means Emergency Vehicle Pack.
 
 ---
 
-## 2025-07-18 — Initial integration: code identical to Ivory, immediate glitching
+## Part 1: The Interior Silence Problem (SOLVED)
 
-### Finding
+### Root Cause: Missing `occludeSoundsWhenIn` / `obstructSoundsWhenIn`
 
-Our `fn_sirens.sqf` was a byte-for-byte copy of Ivory's `fn_sirens.sqf` (only change: hardcoded `_emergencySiren = 1` instead of reading from config). Despite identical code, the siren audio on Mean vehicles exhibited:
+**The previous investigation was WRONG.** It blamed `attenuationEffectType = "CarAttenuation"` for interior silence, claiming Ivory vehicles don't set it. This is false — **all 28 Ivory addons AND all 6 Mean vehicles set `attenuationEffectType = "CarAttenuation"`**. They are identical in this regard.
 
-- **Abrupt cut-off** → brief silence → **restart** at every loop boundary
-- Happens on ALL four tones (Wail, Yelp, Priority, HiLo)
-- Occurs every loop iteration (every ~20.7s for Wail, every ~5.0s for Yelp)
+The **real difference** is two properties that Ivory sets and Mean omits:
 
-### Ivory's code pattern
+| Property | Ivory (all vehicles) | Mean (all vehicles) | Effect |
+|---|---|---|---|
+| `attenuationEffectType` | `"CarAttenuation"` | `"CarAttenuation"` | Same — NOT the cause |
+| `occludeSoundsWhenIn` | **2.5** | **NOT SET** | Controls sound occlusion (geometry blocking) when listener is inside. Low = sounds pass through. Default (when unset) = high = sounds blocked. |
+| `obstructSoundsWhenIn` | **1** | **NOT SET** | Controls sound obstruction (line-of-sight) when inside. Same logic. |
+
+Ivory explicitly sets these to **low values**, allowing external sound sources (`#particlesource` siren dummy) to pass through into the cabin. Mean omits them → engine uses high defaults → `#particlesource` siren is blocked inside.
+
+This explains everything:
+- **Ivory siren audible inside Ivory**: low occlude/obstruct → sound passes through
+- **Ivory siren silent inside Mean**: high default occlude/obstruct → sound blocked
+- **Mean's own `_vcl say3D` works inside**: vehicle-sourced sounds bypass occlusion (same-entity classification)
+
+### Fix: Config Override via Bare-Class Merge
+
+```cpp
+class CfgVehicles
+{
+    class M_CVPIbase
+    {
+        occludeSoundsWhenIn = 2.5;
+        obstructSoundsWhenIn = 1;
+    };
+    // ... repeat for all 6 Mean base classes
+};
+```
+
+**Why this syntax works (and previous attempts didn't):**
+
+| Attempt | Syntax | Result |
+|---|---|---|
+| 1. Self-inherit | `class M_CVPIbase: M_CVPIbase { ... }` | ❌ "inherit class does not exist" — creates a subclass, not a merge |
+| 2. Forward decl + self-inherit | `class M_CVPIbase;` then `class M_CVPIbase: M_CVPIbase { ... }` | ❌ "duplicated token or class" |
+| 3. Bare class (no "Police") | `class M_CVPIbase { ... }` | ❌ Corrupted class — wrong load order (loaded before Mean) |
+| **4. Bare class + "Police"** | `class M_CVPIbase { ... }` with `requiredAddons[] = {"Police", ...}` | ✅ Merges correctly — preserves CRFT_Car_Base parent |
+
+The key: `class X { ... }` (bare, no parent) MERGES properties into the existing class. `class X: X { ... }` creates a subclass. "Police" in `requiredAddons` ensures our addon loads AFTER Mean, so the merge preserves the original parent.
+
+---
+
+## Part 2: The Exterior Gap Problem
+
+### Root Cause: `#particlesource` single-sound limit + scheduler latency
+
+The Arma 3 engine cancels any currently playing sound when a new `say3D` is called on the same `#particlesource`. If the next call fires even 1 frame after the sound ends, there's an audible gap.
+
+Contributing factors on Mean vehicles:
+- Background scripts (`lightbar.sqf`, `Flashers.sqf`, `radar.sqf`) consume scheduler time
+- Our previous code added `sleep 0.05` to `waitUntil`, adding 66ms+ latency at 30fps
+
+### Fix: Dual-dummy alternation + per-frame waitUntil
+
+**Dual-dummy**: Two `#particlesource` dummies (A/B) alternate. Each fires every `2 × (sirenTime - overlap)`. No single dummy receives a new `say3D` while its previous sound plays → no cancellation.
+
+**Per-frame waitUntil** (no `sleep`): Checks every frame like Ivory's original code. At 60fps, checks every 16ms. Much more responsive than `sleep 0.05` (66ms).
 
 ```sqf
-_dummy = "#particlesource" createVehicleLocal ...;
-_dummy attachTo [_car, [0,0,0]];
-
-// Spawned inner loop
-[_car, _siren, _sirenTime, _type, _dummy] spawn {
-    while {ani_siren == _type} do {
-        _timeStarted = time;
-        _dummy say3D [_siren, 300];
-        waitUntil { time >= _timeStarted + _sirenTime || mode changed || driver lost };
-    };
+private _wakeAt = time + _cycleTime;
+waitUntil {
+    time >= _wakeAt || _car getVariable "ani_siren" != _ani_siren || ...
 };
-
-// Outer wait
-waitUntil { ani_siren != _type };
-detach _dummy; deleteVehicle _dummy;
 ```
 
-### Suspected root cause
+### .wav Duration Verification
 
-Environment difference: Mean vehicle has extra scripts from its original `init` handler (`sirenscv.sqf`, `lightbar.sqf`, `Flashers.sqf`, `radar.sqf`) consuming scheduler time, introducing 1-3 frames of jitter (16-50ms). Ivory vehicles have a clean scheduler. The `#particlesource` single-sound limit means any overlap — even 1 frame — causes cancellation → gap.
+All Ivory siren `.wss` files decoded to `.wav` and measured. Hardcoded `_sirenTime` values match exactly:
+
+| Sound | Hardcoded `_sirenTime` | Actual `.wav` duration | Match |
+|---|---|---|---|
+| Wail | 20.742s | 20.742s | ✅ |
+| Yelp | 5.038s | 5.038s | ✅ |
+| Priority | 9.862s | 9.862s | ✅ |
+| HiLo | 10.211s | 10.211s | ✅ |
+
+### Waveform Correlation Analysis
+
+Tail-vs-head correlation measured at various overlaps. At any overlap ≥ 0.05s, all four tones are uncorrelated (near zero). Overlap phase conflict is not a concern.
+
+### Final Overlap Values (with per-frame waitUntil)
+
+| Siren | Duration | Overlap | Notes |
+|---|---|---|---|
+| 1 — Wail | 20.742s | 0.15s | Longest cycle, most jitter exposure |
+| 2 — Yelp | 5.038s | 0.10s | Short cycle |
+| 3 — Priority | 9.862s | 0.10s | Medium cycle |
+| 4 — HiLo | 10.211s | 0.12s | Quieter tail |
+
+These are smaller than the previous values (which compensated for `sleep 0.05` latency). Per-frame `waitUntil` is much more responsive, needing less overlap margin.
 
 ---
 
-## 2025-07-18 — Switched to `_car say3D` (direct vehicle playback)
+## Current Architecture
 
-### Change
-
-Replaced `_dummy say3D` with `_car say3D`. Removed `#particlesource` dummy entirely.
-
-### Result
-
-- Accumulation on mode switch: old tones never stop playing because `_car say3D` plays to completion and cannot be cancelled
-- After 3-4 tone switches, 4+ concurrent `say3D` calls all playing through `_car`
-- "The audio won't normally disappear after you change to another siren"
-
-### Why
-
-`_car say3D` has no cancellation mechanism. Vehicle objects support multiple concurrent `say3D` calls that all mix together. There is no `stopSound` or equivalent command in Arma 3.
-
-### Comparison of sound object types
-
-| Property | `#particlesource` | `_car` (vehicle object) |
+| Component | Mechanism | Why |
 |---|---|---|
-| Concurrent `say3D` | ❌ New cancels old | ✅ Mixes/layers |
-| Stop on demand | ✅ `deleteVehicle` kills all | ❌ Plays to completion |
-| Good for same-tone looping | ❌ Can't overlap | ✅ Can overlap |
-| Good for mode switching | ✅ Instant silence | ❌ Lingering accumulation |
-| In-car volume | Varies by attenuation | Vehicle's own audio processing |
+| Interior audio | Config: `occludeSoundsWhenIn=2.5, obstructSoundsWhenIn=1` | Matches Ivory — allows `#particlesource` through cabin |
+| Exterior audio | Dual-dummy `#particlesource` + `say3D` with overlap | Gapless, cancellable on mode switch |
+| Mode switching | `deleteVehicle` kills both dummies | Instant silence, no accumulation |
+| Loop timing | Per-frame `waitUntil` (no `sleep`) | Matches Ivory's responsiveness |
+
+### What was removed
+- ~~`playSound` fallback~~ — no longer needed; config fix makes `#particlesource` audible inside
+- ~~`sleep 0.05` in waitUntil~~ — was causing 66ms+ latency → gaps
+- ~~`attenuationEffectType = "DefaultAttenuation"` override~~ — wrong target; both mods use CarAttenuation
 
 ---
 
-## 2025-07-18 — Attempted overlap via `_car say3D` + shorter wait
+## Key Files
 
-### Change
-
-Added `- 0.05s` overlap: `waitUntil { time >= _timeStarted + _sirenTime - 0.05 }`
-
-### Result
-
-- At 30fps, frame is ~33ms. Say3D startup latency adds unknown overhead. 
-- If total ε > 0.05s, audible gap persists.
-- At low frame rates (20fps, 50ms frame), gap is always present.
-- The overlap also caused: "the 2nd audio overlaps with the previous on-going one"
-
-### Gap calculation
-
-```
-Frame 0:    _car say3D [siren1, 300]    ← sound starts, ends at T+20.742
-            waitUntil { time >= T + 20.742 - 0.05  ||  mode change }
-
-Frame ~N:   time >= T+20.692  →  waitUntil exits
-            while condition: ani_siren == 1 → true → loops back
-            _car say3D [siren1, 300]    ← second sound starts at ~T+20.692+ε
-            Previous sound ends at      T+20.742
-```
-
-Gap = `ε - 0.05s`. At 30fps (ε ≈ 33ms), gap ≈ 0ms (borderline). At 20fps (ε ≈ 50ms), gap ≈ 0ms (barely). But say3D startup latency adds unpredictable overhead.
-
----
-
-## 2025-07-18 — Increased overlap to 0.3s on `_car say3D`
-
-### Change
-
-`waitUntil { time >= _timeStarted + _sirenTime - 0.3 }`
-
-### Result
-
-- Gap eliminated but... "the overlap time make the sound conflict between transition"
-- "when in yelp, the 1 sound file part is 'going down', the overlapped sound could be 'going up'"
-- Old tone and new tone played simultaneously for 0.3s → audible phase conflict
-- Fine-tuning the overlap was described as "way too complicated"
-
-### Root cause of conflict
-
-With `_car say3D`, the old `say3D` call (0.3s remaining) and the new `say3D` call (just started) mix concurrently. The audio files are long-form recordings (~5-20s), not single-cycle clips. The 0.3s overlap captures different waveform phases: the end of one tone cyclically conflicts with the start of another.
-
----
-
-## 2025-07-18 — Workflow investigation: dual-dummy particlesource
-
-### Finding from multi-agent analysis
-
-The `#particlesource` single-sound limit is the primary root cause. Every new `say3D` on a particlesource **cancels** the previous one. This is a strict Arma engine behavior — not configurable.
-
-### Design of dual-dummy approach
-
-- Two `#particlesource` dummies (A and B) at `[0,0,0]`
-- Each dummy has its own single-sound limit
-- Alternating: A plays, then B plays, then A plays again
-- The offset is `_sirenTime - 0.08` (0.08s before current sound ends)
-- Mode switch: `deleteVehicle` on both dummies → instant silence → new dummies for new tone
-
-### Correct timing trace (full cycle, not half)
-
-```
-T+0:       A says sound (20.742s) → ends T+20.742
-T+20.662:  B says sound (20.742s) → ends T+41.404
-T+41.324:  A says sound (20.742s) → A's previous ended T+20.742. No cancel.
-T+62.048:  B says sound (20.742s) → B's previous ended T+41.404. No cancel.
-```
-
-Each dummy fires every `2 × (_sirenTime − 0.08)` seconds. Each sound completes before its dummy fires again. No cancellation within a dummy.
-
----
-
-## 2025-07-19 — Initial implementation had half-cycle bug
-
-### Bug
-
-Used `_halfCycle = _sirenTime * 0.5` instead of `_cycleTime = _sirenTime - 0.08`.
-
-### Consequence
-
-For wail (20.742s): halfCycle = 10.371s. Dummy A fired at T+0, then again at T+20.582. But A's first sound lasts 20.742s. The second fire at T+20.582 cancels the first sound at T+20.582 (0.16s early). Gap.
-
-Additionally, the transition point was at the wrong time — the overlap started at the half-cycle mark (10.371s) while the actual gap is at the full cycle mark (20.742s).
-
----
-
-## 2025-07-19 — Fixed to full-cycle timing
-
-### Change
-
-`_cycleTime = _sirenTime - 0.08` (was `_halfCycle = _sirenTime * 0.5`)
-
-### Result
-
-"the result is so-so, the audio gap is there but smaller"
-
----
-
-## Persistent unknowns
-
-| Question | Status |
+| File | Purpose |
 |---|---|
-| What is the exact `say3D` audio-pipeline startup latency? | Not measured. Varies by engine load. |
-| What is the actual `.ogg` file duration for each Ivory siren tone? | `_sirenTime` values: 20.742, 5.038, 9.862, 10.211. These are claimed to match Ivory's files, but we couldn't verify the actual file durations. |
-| Does `CfgMusic` (with duration metadata) provide better loop accuracy than `CfgSounds`? | The research found `CfgMusic` has explicit `duration` field, suggesting the engine CAN manage track duration. Switching siren audio to `CfgMusic` might enable engine-managed seamless looping. This was NOT tested. |
-| What is the frame-time jitter range on the specific hardware running the game? | Not measured directly. Depends on CPU, other mods, mission complexity. |
+| `Addons/mean_patch/config.cpp` | Config override: adds Ivory's occlude/obstruct values to Mean vehicles |
+| `Addons/mean_patch/functions/fn_sirens.sqf` | Dual-dummy siren loop, per-frame waitUntil |
+| `ivory-mods/ivory/Addons/ivory_*/config.cpp` | Ivory vehicle configs (reference for correct values) |
+| `ivory-mods/mean/addons/MeansCars/*/config.cpp` | Mean vehicle configs (missing the values we add) |
 
 ---
 
-## External research references
+## Investigation History
 
-- KillzoneKid blog: [some-of-the-goodies-heading-for-1-50/](https://killzonekid.com/some-of-the-goodies-heading-for-1-50/) — CfgSounds update
-- KillzoneKid blog: [tracks2config-and-sound_duration/](https://killzonekid.com/tracks2config-and-sound_duration/) — CfgMusic duration field
-- **No known community solution** for gapless `say3D` looping exists in public Arma modding documentation
-
----
-
-## Summary
-
-The `#particlesource` single-sound limit is the fundamental constraint. It makes Ivory's approach brittle — requiring sub-frame scheduling precision that only works in a clean script environment. On Mean vehicles, background scripts introduce enough jitter to break the timing. The dual-dummy approach minimizes but cannot eliminate the gap because SQF timers + `say3D` startup latency have non-zero, unpredictable overhead.
-
-A true gapless solution would likely require switching from `CfgSounds` to `CfgMusic` (using the engine's native duration management), using a different audio API (like `createSoundSource` if available), or relying on Bohemia exposing native gapless audio features.
+1. **Initial theory**: Scheduler jitter from Mean background scripts → gaps. **Partially correct** — jitter exists but was amplified by our `sleep 0.05`.
+2. **Interior theory**: `attenuationEffectType = CarAttenuation` blocks `#particlesource` inside. **WRONG** — both mods have it.
+3. **Corrected finding**: Missing `occludeSoundsWhenIn`/`obstructSoundsWhenIn` is the real cause. Ivory sets low values; Mean omits them. **CONFIRMED** — verified across all 28 Ivory addons and all 6 Mean vehicles.

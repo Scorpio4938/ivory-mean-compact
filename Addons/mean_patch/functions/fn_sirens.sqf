@@ -1,8 +1,7 @@
 // mean_patch_fnc_sirens
-// Dual-dummy particlesource with responsive mode check.
-// Two dummies alternate for seamless same-tone looping.
-// Mode switch: deleteVehicle kills old sound instantly — no accumulation.
-// Checks for mode change every 0.05s while waiting — responsive.
+// Based on Ivory's siren system: #particlesource + say3D.
+// Dual-dummy alternation compensates for scheduler jitter on Mean vehicles.
+// Interior audio is handled by config (occludeSoundsWhenIn/obstructSoundsWhenIn).
 
 if (!hasInterface) exitWith {};
 params ["_car"];
@@ -25,31 +24,29 @@ while {alive _car} do
         private _siren     = "";
         private _cycleTime = 0;
         call {
-            if (_ani_siren == 1) exitWith { _siren = _siren1; _cycleTime = _siren1Time - 0.08; };
-            if (_ani_siren == 2) exitWith { _siren = _siren2; _cycleTime = _siren2Time - 0.08; };
-            if (_ani_siren == 3) exitWith { _siren = _siren3; _cycleTime = _siren3Time - 0.08; };
-            if (_ani_siren == 4) exitWith { _siren = _siren4; _cycleTime = _siren4Time - 0.08; };
+            if (_ani_siren == 1) exitWith { _siren = _siren1; _cycleTime = _siren1Time - 0.15; };
+            if (_ani_siren == 2) exitWith { _siren = _siren2; _cycleTime = _siren2Time - 0.10; };
+            if (_ani_siren == 3) exitWith { _siren = _siren3; _cycleTime = _siren3Time - 0.10; };
+            if (_ani_siren == 4) exitWith { _siren = _siren4; _cycleTime = _siren4Time - 0.12; };
         };
 
+        // Dual-dummy: alternating particlesources so neither cancels its own sound
         private _dummyA = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
-        _dummyA attachTo [_car, [0,0,0]];
+        _dummyA attachTo [_car, [0, 0, 0]];
         private _dummyB = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
-        _dummyB attachTo [_car, [0,0,0]];
+        _dummyB attachTo [_car, [0, 0, 0]];
 
-        private _toggle  = false;
-        private _alive   = true;
+        private _toggle = false;
 
-        // Inline alternating loop — no nested spawn, responsive mode check
-        while {_alive && alive _car && _car getVariable "ani_siren" == _ani_siren && !isNull driver _car && damage _car < 0.7 && _car getVariable "ani_lightbar" > 0 && player distance _car <= 850} do {
+        // Inner loop — per-frame check like Ivory (no sleep)
+        while {alive _car && _car getVariable "ani_siren" == _ani_siren && !isNull driver _car && damage _car < 0.7 && _car getVariable "ani_lightbar" > 0 && player distance _car <= 850} do {
 
             private _dummy = if (_toggle) then { _dummyA } else { _dummyB };
             _dummy say3D [_siren, 300];
             _toggle = !_toggle;
 
-            // Wait full cycle minus offset, checking mode every 0.05s
             private _wakeAt = time + _cycleTime;
             waitUntil {
-                sleep 0.05;
                 time >= _wakeAt ||
                 _car getVariable "ani_siren" != _ani_siren ||
                 !alive _car ||
@@ -58,14 +55,8 @@ while {alive _car} do
                 _car getVariable "ani_lightbar" == 0 ||
                 player distance _car > 850
             };
-
-            // If mode changed or conditions broken, flag exit
-            if (_car getVariable "ani_siren" != _ani_siren || !alive _car || isNull driver _car || damage _car >= 0.7 || _car getVariable "ani_lightbar" == 0 || player distance _car > 850) then {
-                _alive = false;
-            };
         };
 
-        // Cleanup — deleteVehicle kills all active say3D instantly
         deleteVehicle _dummyA;
         deleteVehicle _dummyB;
 
