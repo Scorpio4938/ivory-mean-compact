@@ -1,8 +1,31 @@
-// mean_patch_fnc_takedown
-// Hold-to-play priority/wail tone. Dual-dummy alternation (consistent with
-// fn_sirens) prevents gaps on long holds. Cancellable via deleteVehicle.
-// When siren active and not in priority mode: plays priority tone.
-// Otherwise: plays wail tone.
+// ============================================================
+// mean_patch_fnc_takedown — takedown tone audio loop
+// ============================================================
+//
+// Hold-to-play tone: plays priority tone if the siren is active and not
+// already in priority mode, otherwise plays wail tone.
+// Uses dual-dummy alternation (same design as fn_sirens.sqf).
+//
+// Why dual-dummy (same as fn_sirens.sqf):
+//   The takedown can be held for 10-30+ seconds. A single dummy's say3D
+//   loop boundary can experience a frame of scheduler drift (due to Mean's
+//   background scripts). Dual-dummy alternation prevents audible gaps by
+//   ensuring no single dummy is asked to overlap its own sound.
+//
+// Priority vs Wail logic:
+//   - If siren IS active AND siren is NOT already in priority mode (mode 3):
+//     play priority tone (a short, urgent pulse)
+//   - Otherwise: play wail tone (a longer, full-cycle tone)
+//   This mirrors Ivory's takedown behavior — the takedown amplifies the
+//   current urgency by playing a more aggressive tone when possible.
+//
+// Notes:
+//   - Both dummies are created when the takedown activates, and both are
+//     deleted on release — this ensures no sound accumulation.
+//   - Overlap offsets: priority -0.10s, wail -0.15s (same rationale as
+//     fn_sirens.sqf — compensate for scheduler jitter on loop boundaries).
+//
+// ============================================================
 
 if (!hasInterface) exitWith {};
 params ["_car"];

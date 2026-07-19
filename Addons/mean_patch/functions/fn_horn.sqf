@@ -1,9 +1,39 @@
-// mean_patch_fnc_horn
-// Hold-to-play airhorn. Uses #particlesource dummy (cancellable via deleteVehicle)
-// so the sound stops instantly on release — no lingering accumulation.
+// ============================================================
+// mean_patch_fnc_horn — airhorn audio loop
+// ============================================================
+//
+// Hold-to-play airhorn. Uses a single #particlesource dummy so the sound
+// stops instantly when released (deleteVehicle kills say3D).
+//
 // Interior audio handled by config (occludeSoundsWhenIn/obstructSoundsWhenIn).
-// (Previously used _car say3D "for in-car volume" — obsolete now that the config
-// occlusion fix makes #particlesource dummies audible inside the cabin.)
+// (Previously used _car say3D for in-car volume — obsolete now that the
+// config occlusion fix makes #particlesource dummies audible inside the cabin.)
+//
+// Ivory approach used:
+//   - Same sound class (ivory_ss2000_airhorn)
+//   - Same variable name (ani_horn)
+//   - Same guard condition (player distance <= 350)
+//   - Same single-dummy architecture (horn doesn't alternate)
+//
+// Why single dummy (not dual):
+//   The horn only plays one sound repeatedly until release. There's no
+//   tone switching or alternation needed — a single dummy is sufficient,
+//   and the spawned inner loop repeatedly calls say3D on it. Unlike the
+//   siren (which switches between tones), the horn never needs dual-dummy.
+//
+// Why the inner loop is spawned (not inline):
+//   The outer while loop needs to continue running so it can detect when
+//   ani_horn returns to 0 (release). The inner loop does the audio playback
+//   in parallel. Without the spawn, the outer loop would block on the
+//   inner loop and never detect the release.
+//
+// Why deleteVehicle stops the sound:
+//   #particlesource object -> say3D sound is linked to the dummy's
+//   lifetime. Deleting the dummy instantly stops all sounds playing
+//   through it. This is the ONLY reliable way to stop an ongoing say3D
+//   without lingering accumulation.
+//
+// ============================================================
 
 if (!hasInterface) exitWith {};
 params ["_car"];

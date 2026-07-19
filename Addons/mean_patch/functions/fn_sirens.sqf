@@ -1,7 +1,58 @@
-// mean_patch_fnc_sirens
+// ============================================================
+// mean_patch_fnc_sirens — siren audio loop
+// ============================================================
+//
 // Based on Ivory's siren system: #particlesource + say3D.
-// Dual-dummy alternation compensates for scheduler jitter on Mean vehicles.
 // Interior audio is handled by config (occludeSoundsWhenIn/obstructSoundsWhenIn).
+//
+// Ivory approach used:
+//   - Same variable names (ani_siren, ani_lightbar)
+//   - Same sound classes (ivory_ss2000_wail/yelp/priority/hilo)
+//   - Same outer structure: while{ alive _car } -> if/else -> idle/active
+//   - Same guard conditions (damage < 0.7, lightbar > 0, player distance)
+//
+// How it works:
+//   1. Idle loop (else branch): sleeps 0.01 between checks, waiting for
+//      ani_siren > 0, driver present, lightbar on, etc.
+//   2. Active loop (if branch): creates TWO #particlesource dummies,
+//      alternates say3D between them, checks for mode changes per-frame.
+//   3. On exit (mode change / deletion): deleteVehicle kills both dummies,
+//      stopping all sound instantly.
+//
+// Why dual-dummy (vs Ivory's single-dummy):
+//   Ivory uses a single dummy + a separate spawn for the inner loop.
+//   This works for Ivory because their vehicles have fewer competing
+//   scripts (less scheduler jitter). On Mean vehicles, Mean's background
+//   scripts (Lightbar.sqf, sirenscv.sqf, radar.sqf, Flashers.sqf) create
+//   scheduler contention that causes 1-3 frame timing drift on siren loop
+//   boundaries. With a single dummy, this drift sometimes causes the new
+//   say3D to arrive before the old one finishes — and #particlesource only
+//   supports 1 concurrent say3D, so the new call cancels the old one,
+//   creating an audible gap. Dual-dummy alternation ensures the old sound
+//   always finishes before alternation, eliminating gaps.
+//
+// Why overlap offsets (_cycleTime - 0.10/0.12/0.15):
+//   Each siren's loop duration has a small offset subtracted to overlap
+//   the next cycle slightly, compensating for scheduler jitter.
+//   Different offset per tone because each has different duration/loop
+//   characteristics:
+//     Wail     (20.742s) - 0.15  (long loop, more drift possible)
+//     Yelp     ( 5.038s) - 0.10  (short loop, less drift)
+//     Priority ( 9.862s) - 0.10  (tight loop)
+//     HiLo     (10.211s) - 0.12  (medium loop)
+//
+// Why deleteVehicle (not detach):
+//   _car say3D accumulates sounds — multiple concurrent calls stack and
+//   never stop (vehicle object). #particlesource dummies are the ONLY
+//   guaranteed cleanup: deleteVehicle removes the object, killing its
+//   say3D instantly. detach wouldn't stop the sound.
+//
+// Why inner while has NO sleep:
+//   The waitUntil uses time >= _wakeAt (pure time comparison, no sleep).
+//   This minimizes drift — a sleep inside would introduce additional
+//   scheduler delay. The condition is checked every frame by the engine.
+//
+// ============================================================
 
 if (!hasInterface) exitWith {};
 params ["_car"];
