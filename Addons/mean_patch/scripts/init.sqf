@@ -158,52 +158,15 @@
 }, {}, [DIK_BACKSLASH, [false, false, false]]] call CBA_fnc_addKeybind;
 
 // ──────────────────────────────────────
-// Init override — registers all 37 Mean concrete vehicle classes
+// Init override — registers base classes (handlers propagate to derived)
 // ──────────────────────────────────────
-private _allMeanClasses = [
-    // CVPI (10 variants)
-    "M_CVPI",
-    "M_CVPI_Supervisor",
-    "M_CVPI_Slick",
-    "M_CVPI_NEW",
-    "M_CVPI_EMS",
-    "M_CVPI_UC_Black",
-    "M_CVPI_UC_White",
-    "M_CVPI_UC_Blue",
-    "M_CVPI_UC_Grey",
-    "M_CVPI_UC_Red",
-    // Charger 2012 (8 variants)
-    "M_Charger12",
-    "M_Charger12_NEW",
-    "M_Charger12_Slick",
-    "M_Charger12_UC_Black",
-    "M_Charger12_UC_White",
-    "M_Charger12_UC_Blue",
-    "M_Charger12_UC_Grey",
-    "M_Charger12_UC_Red",
-    // Tahoe 2015 (9 variants)
-    "M_Tahoe",
-    "M_Tahoe_supervisor",
-    "M_Tahoe_NEW",
-    "M_Tahoe_EMS",
-    "M_Tahoe_UC_Black",
-    "M_Tahoe_UC_White",
-    "M_Tahoe_UC_Blue",
-    "M_Tahoe_UC_Grey",
-    "M_Tahoe_UC_Red",
-    // FPIS Taurus (7 variants)
-    "M_FPIS",
-    "M_FPIS_NEW",
-    "M_FPIS_slick",
-    "M_FPIS_UC_White",
-    "M_FPIS_UC_Blue",
-    "M_FPIS_UC_Grey",
-    "M_FPIS_UC_Red",
-    // Ambulance (1 variant)
-    "M_Ambulance",
-    // Silverado (2 variants)
-    "M_Silverado",
-    "M_Silverado_cab"
+private _allMeanBases = [
+    "M_CVPIbase",
+    "M_Charger12base",
+    "M_Tahoebase",
+    "M_FPISbase",
+    "M_Ambulancebase",
+    "M_Silveradobase"
 ];
 
 {
@@ -211,4 +174,4 @@ private _allMeanClasses = [
         params ["_car"];
         _car spawn mean_patch_fnc_initCar;
     }, true, [], true] call CBA_fnc_addClassEventHandler;
-} forEach _allMeanClasses;
+} forEach _allMeanBases;
