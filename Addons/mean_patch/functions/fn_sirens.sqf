@@ -32,9 +32,9 @@ while {alive _car} do
         };
 
         private _dummyA = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
-        _dummyA attachTo [_car, [0,0,0]];
+        _dummyA attachTo [_car, [0, 0, 1.5]];
         private _dummyB = "#particlesource" createVehicleLocal ASLToAGL getPosWorld _car;
-        _dummyB attachTo [_car, [0,0,0]];
+        _dummyB attachTo [_car, [0, 0, 1.5]];
 
         private _toggle  = false;
         private _alive   = true;
@@ -44,7 +44,6 @@ while {alive _car} do
 
             private _dummy = if (_toggle) then { _dummyA } else { _dummyB };
             _dummy say3D [_siren, 300];
-            _car say3D [_siren, 700];  // interior mix — louder inside the vehicle
             _toggle = !_toggle;
 
             // Wait full cycle minus offset, checking mode every 0.05s
