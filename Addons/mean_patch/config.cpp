@@ -3,7 +3,7 @@ class CfgPatches
     class mean_patch
     {
         requiredVersion = 0.1;
-        requiredAddons[] = {"Meanscars", "Ivory_Data", "cba_main"};
+        requiredAddons[] = {"Police", "Ivory_Data", "cba_main"};
         units[] = {};
         weapons[] = {};
     };
