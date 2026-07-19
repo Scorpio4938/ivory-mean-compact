@@ -44,6 +44,7 @@ while {alive _car} do
 
             private _dummy = if (_toggle) then { _dummyA } else { _dummyB };
             _dummy say3D [_siren, 300];
+            _car say3D [_siren, 300];  // interior — bypasses CarAttenuation
             _toggle = !_toggle;
 
             // Wait full cycle minus offset, checking mode every 0.05s
