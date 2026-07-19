@@ -158,7 +158,17 @@
 }, {}, [DIK_BACKSLASH, [false, false, false]]] call CBA_fnc_addKeybind;
 
 // ──────────────────────────────────────
-// Init override — registers base classes (handlers propagate to derived)
+// Lazy init — deferred to GetIn (NOT init) to avoid loading-screen hang.
+//
+// ROOT CAUSE of loading hang: CBA XEH re-fires "init" for ALL existing
+// vehicles in a single postInit burst. With 37 Mean vehicles, that's
+// 111 spawned threads + 37 addAction + 222 public setVariables in one
+// frame — exceeds the loading frame budget and hangs the screen.
+//
+// FIX: use "GetIn" instead of "init". CBA does NOT re-fire GetIn for
+// existing objects, so zero work happens during loading. Each vehicle
+// initializes on first entry (player or AI). A one-time scan below
+// catches editor-placed vehicles that already have drivers.
 // ──────────────────────────────────────
 private _allMeanBases = [
     "M_CVPIbase",
@@ -170,8 +180,24 @@ private _allMeanBases = [
 ];
 
 {
-    [_x, "init", {
+    [_x, "GetIn", {
         params ["_car"];
         _car spawn mean_patch_fnc_initCar;
-    }, true, [], true] call CBA_fnc_addClassEventHandler;
+    }, true] call CBA_fnc_addClassEventHandler;
 } forEach _allMeanBases;
+
+// One-time scan for vehicles that already have drivers (editor-placed AI).
+// Runs after loading completes; only touches vehicles WITH a driver.
+[] spawn {
+    sleep 1;
+    {
+        private _type = typeOf _x;
+        if (!isNull driver _x &&
+            !(_x getVariable ["mean_patch_initialized", false]) &&
+            {_type find "M_CVPI" >= 0 || _type find "M_Charger12" >= 0 ||
+             _type find "M_Tahoe" >= 0 || _type find "M_FPIS" >= 0 ||
+             _type find "M_Ambulance" >= 0 || _type find "M_Silverado" >= 0}) then {
+            [_x] call mean_patch_fnc_initCar;
+        };
+    } forEach vehicles;
+};

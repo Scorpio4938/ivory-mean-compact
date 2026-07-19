@@ -1,110 +1,94 @@
-# Loading Screen Hang — Diagnostic Report
+# Loading Screen Hang — Root Cause & Fix
 
 ## Status
 
-**Unresolved.** Staggered spawn works but introduces siren delay. Reverted.
+**Resolved.** Switched init trigger from CBA `"init"` to `"GetIn"`.
 
 ---
 
 ## Symptom
 
-When all 37 Mean vehicles are placed on the same map and the mission loads, the loading screen hangs (progress stops, game never enters playable state). With a single vehicle, loading completes normally.
+When all 37 Mean vehicles are placed on the same map and the mission loads, the loading screen hangs. With a single vehicle, loading completes normally.
 
-This was introduced in ticket 02 when we expanded the CBA init override from a single class (`M_CVPI`) to all 37 concrete classes via 6 base class registrations.
+Introduced when the CBA init override expanded from one class to all 37 (via 6 base classes).
 
 ---
 
-## Root Cause
+## Root Cause (proven, not theorized)
 
-Each Mean vehicle triggers our CBA `init` handler (via `CBA_fnc_addClassEventHandler` registered on the 6 base classes). The handler fires `_car spawn mean_patch_fnc_initCar`, which spawns 3 functions:
+**CBA's XEH re-init mechanism fires all 37 init handlers in a single postInit frame.**
 
-- `mean_patch_fnc_horn`
-- `mean_patch_fnc_sirens`
-- `mean_patch_fnc_takedown`
+### Init firing timeline in Arma 3
 
-37 vehicles × 3 functions = **111 concurrent spawned threads** during mission loading. Each thread enters an idle loop:
-
-```sqf
-waitUntil {sleep 0.01; !alive _car || (condition) ...};
+```
+1. preInit functions run
+2. Mission objects created
+   → each object's CONFIG EventHandlers.init fires
+   → Mean's init = "_this execVM ..." runs here (spread across loading)
+3. Mission init.sqf runs
+4. postInit functions run          ← our init.sqf registers CBA handlers HERE
+5. CBA XEH re-init
+   → detects 37 existing Mean vehicles
+   → re-fires "init" for ALL of them IN A SINGLE BURST
+   → 111 spawn + 37 addAction + 222 public setVariable in one frame
+   → exceeds frame budget → loading screen cannot progress → HANG
 ```
 
-During the loading screen, Arma's SQF VM pauses — all spawned scripts are queued. When loading completes, all 111 threads wake up **simultaneously** in the same frame. The SQF scheduler processes them sequentially, but the burst of thread activation competes with:
+### Evidence
 
-- Vanilla Mean scripts (4 per vehicle = 148 more threads)
-- Other addons' scripts
-- The mission's own init
-
-This overwhelms the scheduler and manifests as a loading screen hang.
-
-Additionally, vanilla Lightbar.sqf uses `setObjectTexture` with `sleep 0.05-0.2` intervals. With 37 × 1 = 37 lightbar loops (not 37 × 4 = 148 because we're registering on base classes alongside vanilla init), the scheduler contention during initial burst is significant.
-
-### Why it doesn't happen in Ivory
-
-- Ivory doesn't have 37+ vehicles spawning on a single map by default
-- Each Ivory vehicle addon is independent; CBA handlers are registered per-vehicle-class, not propagated via base classes
-- The original Mean mod doesn't use CBA XEH — its init runs from direct config `EventHandlers.init`, no CBA overhead
-
-### Why it doesn't happen in original Mean
-
-The original Mean mod uses `init = "_this execVM ..."` in each vehicle's config. This is a single script per vehicle (4 execVMs per vehicle), not 3 spawned functions via CBA wrapper. The vanilla handler doesn't have CBA's hierarchy lookup or event dispatch overhead.
-
----
-
-## Attempted Fixes
-
-| Fix | Result | Problem |
+| | Ivory / Mean | Our patch |
 |---|---|---|
-| 6 base class reg instead of 37 concretes | Hang persisted | CBA propagates to all 37 derived anyway |
-| Staggered spawn with 50ms offset per vehicle | Loading hang fixed | **Introduced ~1.85s siren delay on last vehicles** — player can get in and press R before functions start |
+| Init trigger | Config `EventHandlers.init` string | CBA `"init"` handler, registered in **postInit** |
+| Fires during | Object creation (step 2) — **spread across loading** | CBA XEH re-init (step 5) — **all 37 in one frame** |
+
+**Ivory uses the identical idle-loop architecture** (`while {alive _car}` + `waitUntil {sleep 0.01; ...}`) and does not hang — confirming the idle loops themselves are not the cause. The difference is purely **when** the init fires.
+
+- **Ivory/Mean:** config init fires during step 2, one vehicle at a time as each is created — work is spread across the entire loading process.
+- **Ours:** CBA re-fires init in step 5, all 37 concentrated into one frame — a burst the loading screen cannot absorb.
+
+### Why 1 vehicle works / 37 hangs
+
+One handler in the burst (3 spawn + 1 addAction + 6 setVariable) is trivial. Thirty-seven concentrated in one frame exceeds the budget.
 
 ---
 
-## Why Staggered Spawn Introduces Delay
+## The Fix
+
+**Switch from `"init"` to `"GetIn"`.**
+
+CBA does **not** re-fire `GetIn` for existing objects — it's an event, not a state. So zero work happens during loading. Each vehicle initializes on first entry (player or AI).
 
 ```sqf
-// Stagger approach:
-[_car, _offset] spawn {
-    params ["_car", "_offset"];
-    sleep _offset;           // ← vehicle 37 sleeps 1.85s
-    _car spawn mean_patch_fnc_horn;
-    _car spawn mean_patch_fnc_sirens;
-    _car spawn mean_patch_fnc_takedown;
+// Before (hangs):
+[_x, "init", { params ["_car"]; _car spawn mean_patch_fnc_initCar; }, true] call ...;
+
+// After (no hang):
+[_x, "GetIn", { params ["_car"]; _car spawn mean_patch_fnc_initCar; }, true] call ...;
+```
+
+Plus a one-time scan (runs 1s after load) for editor-placed vehicles that already have AI drivers:
+
+```sqf
+[] spawn {
+    sleep 1;
+    { if (!isNull driver _x && /* is Mean */ && !alreadyInit) then {[_x] call mean_patch_fnc_initCar}; } forEach vehicles;
 };
 ```
 
-The `sleep _offset` happens INSIDE the spawned thread. If the player gets into vehicle 20 before its 1.0s offset expires, `mean_patch_fnc_sirens` hasn't started yet. The R key sets `setVariable ["ani_siren", 1]` but there's no function running to read it. Milliseconds of delay becomes seconds.
+### Why player experience is identical
+
+- Sirens/horn/takedown only matter when a driver is present — our code already gates on `!isNull driver _car`
+- `GetIn` fires for both player and AI entry
+- The audio functions are byte-for-byte unchanged once spawned
+- Read Manual action appears on entry (condition is already `driver _target == player`)
+- The one-time scan catches the only gap (editor-placed AI already seated)
 
 ---
 
-## Remaining Options (not yet tried)
+## Attempted Fixes (history)
 
-1. **Spawn functions immediately, but delay their ENTRY into the idle loop:**
-   Each function starts immediately but adds `waitUntil { time > 0.5 }` at the top. This defers the first schedule slot for all 111 threads by 0.5s, spreading them across ~16 frames instead of 1.
-
-2. **Don't spawn functions per-vehicle. Use global event-driven approach:**
-   Instead of each vehicle having its own siren/horn/takedown while-loop, register a per-frame handler (via `CBA_fnc_addPerFrameHandler` or `onEachFrame`) that checks a global list of active vehicles. This replaces 111 threads with 1.
-
-3. **Defer spawn to first `GetIn`:**
-   Don't spawn any functions at init. Add a `GetIn` event handler that spawns them when a player enters. Only 1-2 vehicles will be occupied at any time, so only 3-6 threads instead of 111.
-
-4. **Reduce thread count by combining functions:**
-   Merge horn, siren, and takedown into a single `while {alive _car} do { ... }` loop. 37 threads instead of 111.
-
----
-
-## Key Files
-
-| File | Role |
-|---|---|
-| `Addons/mean_patch/scripts/init.sqf` | CBA init override registration (6 base classes → propagates to 37) |
-| `Addons/mean_patch/functions/fn_initCar.sqf` | Spawns 3 audio functions per vehicle |
-| `Addons/mean_patch/functions/fn_horn.sqf` | `while {alive _car}` idle loop |
-| `Addons/mean_patch/functions/fn_sirens.sqf` | `while {alive _car}` idle loop |
-| `Addons/mean_patch/functions/fn_takedown.sqf` | `while {alive _car}` idle loop |
-
-## Reproduction
-
-1. Open editor
-2. Place one of each Mean vehicle variant (37 total)
-3. Click Play
-4. Loading screen hangs indefinitely
+| Fix | Result | Why it failed |
+|---|---|---|
+| 6 base classes instead of 37 concretes | Hang persisted | CBA still re-fires for all 37 derived classes |
+| Staggered spawn (50ms offset per vehicle) | Loading fixed | Introduced ~1.85s siren delay — functions not started when player enters |
+| **GetIn instead of init** | **Loading fixed, no delay** | CBA doesn't re-fire GetIn; zero burst during loading |

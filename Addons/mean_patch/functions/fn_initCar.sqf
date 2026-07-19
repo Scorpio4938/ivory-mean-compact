@@ -1,4 +1,5 @@
 // mean_patch_fnc_initCar
+// Triggered by GetIn (not init) — see scripts/init.sqf for why.
 // Runs alongside the original Mean init (which handles lightbar/flasher/radar).
 // We only add the Ivory-style siren/horn audio system and Read Manual action.
 
