@@ -1,7 +1,7 @@
 name = "Ivory Means Compact Siren";
-picture = "\SCORPIO4938_\ivory-mean-compact\logo-256x256.paa";
-logo = "\SCORPIO4938_\ivory-mean-compact\logo-256x256.paa";
-logoOver = "\SCORPIO4938_\ivory-mean-compact\logo-256x256.paa";
+picture = "\SCORPIO4938_\ivory-mean-compact\Addons\mean_patch\data\logo-256x256.paa";
+logo = "\SCORPIO4938_\ivory-mean-compact\Addons\mean_patch\data\logo-256x256.paa";
+logoOver = "\SCORPIO4938_\ivory-mean-compact\Addons\mean_patch\data\logo-256x256.paa";
 actionName = "GitHub";
 action = "https://github.com/Scorpio4938/ivory-mean-compact";
 tooltip = "Mean Patch — Ivory siren audio on Mean vehicles";
