@@ -85,6 +85,7 @@ class CfgPatches
 class CfgVehicles
 {
     class CRFT_Car_Base;
+    class M_CVPIbase: CRFT_Car_Base
     {
         occludeSoundsWhenIn = 2.5;
         obstructSoundsWhenIn = 1;
