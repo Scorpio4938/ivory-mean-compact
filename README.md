@@ -33,9 +33,9 @@ Mean's original lightbar visuals, flashers, and radar are unaffected.
 
 ## Credits
 
-- **Nick Means** — Means Emergency Vehicle Pack
-- **Ivory Devs** — Ivory Car Pack (siren audio system)
-- **CBA Team** — Community Base Addons
+- **Nick Means** — Means Emergency Vehicle Pack. Credit given, and love and affection delivered to all 37 cars.
+- **Ivory Devs** — Ivory Car Pack (siren audio system). Credit appreciated but not mandatory.
+- **CBA Team** — Community Base Addons.
 
 ## GitHub
 
@@ -43,4 +43,4 @@ Mean's original lightbar visuals, flashers, and radar are unaffected.
 
 ## License
 
-License file to be added.
+This repo's original code (the `mean_patch` addon) is licensed under the [MIT License](LICENSE). Our code uses and adapts systems from the source mods listed in Credits — please respect their terms as stated above.
