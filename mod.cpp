@@ -1,10 +1,10 @@
-name = "Mean Patch";
-picture = "\SCORPIO4938_\ivory-mean-compact\logo.png";
-logo = "\SCORPIO4938_\ivory-mean-compact\logo.png";
-logoOver = "\SCORPIO4938_\ivory-mean-compact\logo.png";
+name = "Ivory Means Compact Siren";
+picture = "\SCORPIO4938_\ivory-mean-compact\logo.paa";
+logo = "\SCORPIO4938_\ivory-mean-compact\logo.paa";
+logoOver = "\SCORPIO4938_\ivory-mean-compact\logo.paa";
 actionName = "GitHub";
 action = "https://github.com/Scorpio4938/ivory-mean-compact";
 tooltip = "Mean Patch — Ivory siren audio on Mean vehicles";
 tooltipOwned = "Mean Patch — all 37 Mean vehicle classes patched";
 overview = "Ports the Ivory Car Pack siren audio system onto Means Emergency Vehicle Pack vehicles. Supports all 37 Mean vehicle classes.";
-author = "Scorpio493.8";
+author = "Scorpio_493.8";
