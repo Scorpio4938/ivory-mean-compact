@@ -6,8 +6,8 @@ Ports the Ivory Car Pack siren audio system onto Means Emergency Vehicle Pack ve
 
 ## Dependencies
 
-- [Means Emergency Vehicle Pack](https://steamcommunity.com/sharedfiles/filedetails/?id=2105316635)
-- [Ivory Car Pack](https://steamcommunity.com/sharedfiles/filedetails/?id=108976015)
+- [Means Emergency Vehicle Pack](https://steamcommunity.com/workshop/filedetails/?id=1302194032)
+- [Ivory Car Pack](https://steamcommunity.com/workshop/filedetails/?id=1888644057)
 - [CBA](https://steamcommunity.com/workshop/filedetails/?id=450814997)
 
 ## Controls
