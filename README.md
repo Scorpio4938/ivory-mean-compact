@@ -1,5 +1,7 @@
 # Mean Patch
 
+<p align="center"><img src="logo.png" alt="Mean Patch logo" width="192" height="192"></p>
+
 Ports the Ivory Car Pack siren audio system onto Means Emergency Vehicle Pack vehicles. Supports all 37 Mean vehicle classes.
 
 ## Dependencies
