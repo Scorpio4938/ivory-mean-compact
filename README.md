@@ -1,6 +1,6 @@
 # Mean Patch
 
-Ports the [Ivory Car Pack](https://steamcommunity.com/sharedfiles/filedetails/?id=108976015) siren audio system onto [Means Emergency Vehicle Pack](https://steamcommunity.com/sharedfiles/filedetails/?id=2105316635) vehicles. Supports all 37 Mean vehicle classes.
+Ports the Ivory Car Pack siren audio system onto Means Emergency Vehicle Pack vehicles. Supports all 37 Mean vehicle classes.
 
 ## Dependencies
 
