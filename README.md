@@ -31,15 +31,15 @@ Ports the Ivory Car Pack siren audio system onto Means Emergency Vehicle Pack ve
 
 Mean's original lightbar visuals, flashers, and radar are unaffected.
 
-## Credits
-
-- **Nick Means** — Means Emergency Vehicle Pack. Credit given, and love and affection delivered to all 37 cars.
-- **Ivory Devs** — Ivory Car Pack (siren audio system). Credit appreciated but not mandatory.
-- **CBA Team** — Community Base Addons.
-
 ## GitHub
 
 <https://github.com/Scorpio4938/ivory-mean-compact>
+
+## Credits
+
+- **Means** — Means Emergency Vehicle Pack. Credit given, and love and affection delivered to all 37 cars.
+- **Ivory** — Ivory Car Pack (siren audio system).
+- **CBA Team** — Community Base Addons.
 
 ## License
 
